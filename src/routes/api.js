@@ -3,6 +3,22 @@ const { CHANNEL, JOB_CHANNEL, GAME_PLACE_ID, LOBBY_PLACE_ID } = require('../conf
 const { pending, sessions, completed, lastSeen, lastSent, saveStorage } = require('../state');
 const { sendDiscordMessage } = require('../utils/discord');
 const router = express.Router();
+const fs = require("fs");
+const path = require("path");
+
+// auto load storage.json
+router.get("/api/storage", (req, res) => {
+  const filePath = path.join(__dirname, "storage.json");
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) return res.status(500).json({ error: "Failed to read storage.json" });
+    try {
+      const json = JSON.parse(data);
+      res.json(json);
+    } catch (e) {
+      res.status(500).json({ error: "Invalid JSON format in storage.json" });
+    }
+  });
+});
 
 // POST /start-job
 router.post("/start-job", async (req, res) => {
