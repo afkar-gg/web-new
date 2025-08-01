@@ -111,43 +111,68 @@ router.post("/bond", async (req, res) => {
 });
 
 // GET /status/:query
-router.get("/status/:query", (req, res) => {
-    const q = req.params.query.toLowerCase();
-    const findSession = coll => Array.from(coll.values()).find(s => s.username.toLowerCase() === q || (s.no_order && s.no_order.toLowerCase() === q));
-    const session = findSession(sessions) || findSession(pending) || findSession(completed);
-    
-    if (!session) return res.status(404).json({ error: `No session found for ${req.params.query}` });
+router.get("/status/:query", (req, res, next) => {
+  if (!req.accepts("json")) return res.redirect("/status");
+  next();
+}, (req, res) => {
+  const q = req.params.query.toLowerCase();
+  const findSession = coll =>
+    Array.from(coll.values()).find(
+      s => s.username.toLowerCase() === q ||
+           (s.no_order && s.no_order.toLowerCase() === q)
+    );
+  const session = findSession(sessions) || findSession(pending) || findSession(completed);
+  if (!session) return res.status(404).json({ error: `No session found for ${req.params.query}` });
 
-    const userKey = session.username.toLowerCase();
-    const isActive = sessions.has(userKey);
-    const isCompleted = completed.has(userKey);
-    let status = isCompleted ? "completed" : (isActive ? "running" : "pending");
+  const now = Date.now();
+  const isActive = sessions.has(session.username.toLowerCase());
+  const isCompleted = completed.has(session.username.toLowerCase());
+  let status = isCompleted ? "completed" : (isActive ? "running" : "pending");
 
-    const seen = (session.type === "bonds" ? lastSent.get(userKey) : lastSeen.get(userKey)) || 0;
-    if (isActive && Date.now() - seen > 120000) {
-        status = "inactive";
-    }
+  const seen = session.type === "bonds"
+    ? lastSent.get(session.username.toLowerCase())
+    : lastSeen.get(session.username.toLowerCase()) || 0;
 
-    const base = { username: session.username, status, type: session.type, no_order: session.no_order, nama_store: session.nama_store };
+  if (isActive && now - seen > 120_000) {
+    status = "inactive";
+  }
 
-    if (status === "running" || status === "inactive") {
-        return res.json({
-            ...base,
-            endTime: session.endTime,
-            timeLeft: Math.max(0, session.endTime - Date.now()),
-            lastSeen: seen,
-            activity: session.placeId === GAME_PLACE_ID ? "Gameplay" : session.placeId === LOBBY_PLACE_ID ? "Lobby" : "Unknown",
-            currentBonds: session.current_bonds,
-            targetBonds: session.target_bond,
-            gained: session.type === "bonds" ? session.current_bonds - session.start_bonds : undefined
-        });
-    }
+  const base = {
+    username: session.username,
+    status,
+    type: session.type,
+    no_order: session.no_order,
+    nama_store: session.nama_store
+  };
 
-    if (status === "completed") {
-        return res.json({ ...base, completedAt: session.completedAt || session.endTime, gained: session.type === "bonds" ? session.current_bonds - session.start_bonds : undefined });
-    }
+  if (status === "running" || status === "inactive") {
+    return res.json({
+      ...base,
+      endTime: session.endTime,
+      timeLeft: Math.max(0, session.endTime - now),
+      lastSeen: seen,
+      activity: session.placeId === GAME_PLACE_ID ? "Gameplay"
+               : session.placeId === LOBBY_PLACE_ID ? "Lobby"
+               : "Unknown",
+      currentBonds: session.current_bonds,
+      targetBonds: session.target_bond,
+      gained: session.type === "bonds"
+        ? session.current_bonds - session.start_bonds
+        : undefined
+    });
+  }
 
-    return res.json(base); // pending
+  if (status === "completed") {
+    return res.json({
+      ...base,
+      completedAt: session.completedAt || session.endTime,
+      gained: session.type === "bonds"
+        ? session.current_bonds - session.start_bonds
+        : undefined
+    });
+  }
+
+  return res.json(base); // pending
 });
 
 // POST /send-job
