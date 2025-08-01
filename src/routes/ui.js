@@ -9,12 +9,10 @@ function renderRows(items, type) {
       return `<tr><td colspan="6" style="color:#aaa;text-align:center;">No ${type} sessions</td></tr>`;
     }
     const formatAmount = (s) => {
-        if (s.type === "bonds") return `${(s.current_bonds - s.start_bonds) || 0} bonds`;
         if (s.startTime && s.endTime) {
-            const minutes = Math.round((s.endTime - s.startTime) / 60000);
-            return `${minutes} min`;
-        }
-        return "-";
+        const remaining = Math.max(0, s.endTime - now);
+        const minutes = Math.floor(remaining / 60000);
+        return `${minutes} min left`;
     };
     return items.map(s => `
       <tr>
