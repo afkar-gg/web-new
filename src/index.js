@@ -2,11 +2,11 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const { exec } = require("child_process");
 
-const config = require("./config");
+const config = require("./src/config");
 const { loadStorage, sessions, completed, lastSeen } = require('./state');
-const { sendDiscordMessage } = require('./utils/discord');
-const authMiddleware = require('./middleware/auth');
-const mainRouter = require('./routes/index');
+const { sendDiscordMessage } = require('./src/utils/discord');
+const authMiddleware = require('./src/middleware/auth');
+const mainRouter = require('./src/routes/index');
 
 // Load initial data from storage
 loadStorage();
