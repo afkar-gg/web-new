@@ -3,7 +3,7 @@ const cookieParser = require("cookie-parser");
 const { exec } = require("child_process");
 
 const config = require("./src/config");
-const { loadStorage, sessions, completed, lastSeen } = require('./state');
+const { loadStorage, sessions, completed, lastSeen } = require('./src/state');
 const { sendDiscordMessage } = require('./src/utils/discord');
 const authMiddleware = require('./src/middleware/auth');
 const mainRouter = require('./src/routes/index');
