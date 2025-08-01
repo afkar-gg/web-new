@@ -64,7 +64,7 @@ router.get("/dashboard", (req, res) => {
 });
 
 // GET /status
-app.get("/status", (req, res) => {
+router.get("/status", (req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="id">
 <head>
