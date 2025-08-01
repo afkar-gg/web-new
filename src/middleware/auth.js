@@ -7,13 +7,8 @@ function requireAuth(req, res, next) {
     "/disconnected", "/jadwal", "/schedule", "/current-subject", "/order"
   ];
   
-  if (openPaths.some(p => req.path.startsWith(p))) {
-    return next();
-  }
-  
-  if (req.cookies?.dash_auth === DASH_PASS) {
-    return next();
-  }
+const allowed = open.some(p => req.path === p || req.path.startsWith(p + "/"));
+if (allowed || req.cookies?.dash_auth === DASH_PASS) return next();
 
   return res.redirect("/login");
 }
