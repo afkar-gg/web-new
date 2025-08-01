@@ -64,8 +64,123 @@ router.get("/dashboard", (req, res) => {
 });
 
 // GET /status
-router.get("/status", (req, res) => {
-    res.send(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Check Joki Status</title><style>body{margin:0;padding:0;background:#18181b;color:#eee;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}.main-container{width:90%;max-width:500px;padding:20px;background:#23232b;border-radius:12px;box-shadow:0 2px 16px #0008;text-align:center;}input#u,button{width:100%;padding:12px;margin-top:12px;border:none;border-radius:4px;font-size:16px;}input#u{background:#2a2a33;color:#eee;}button{background:#3b82f6;color:#fff;cursor:pointer;}.status-frame{margin-top:20px;padding:16px;background:#2c2c34;border-radius:8px;box-shadow:0 2px 10px #000;text-align:center;}.qr-frame{margin-top:12px;padding:16px;background:#1f1f25;border-radius:8px;text-align:left;font-size:14px;}h3{margin-bottom:8px;color:#3b82f6;}@media(min-width:768px){.main-container{max-width:80%;}}</style></head><body><div class="main-container"><h2>🔍 Cek Status Joki</h2><input id="u" placeholder="Username atau Order ID"/><button onclick="startCheck()">Check</button><div id="r" class="status-frame"></div><div class="qr-frame"><h3>Mau Diskon Untuk Pembelian Selanjutnya?</h3><p>Minta kode QRIS ke owner via WhatsApp untuk dapat harga lebih murah.</p><h3>Apakah Tidak Bisa Mendapatkan Diskon Di Itemku?</h3><p>Karena ada pajak 12% dari Itemku, saya hanya bisa berikan harga segitu. Ini QRIS saya sebelum pindah ke Itemku.</p><h3>Dulu Berjualan Dimana?</h3><p>🤫</p></div></div><script>let interval;function startCheck(){clearInterval(interval);const q=document.getElementById('u').value.trim();if(!q)return;check(q);interval=setInterval(()=>check(q),1000)}async function check(q){const out=document.getElementById('r');try{const res=await fetch('/status/'+encodeURIComponent(q));const d=await res.json();if(!res.ok){out.innerHTML='❌ '+d.error;clearInterval(interval);return}if(d.status==='pending'){out.innerHTML='⌛ <b>'+d.username+'</b> sedang menunggu...'}else if(d.status==='running'){const rem=Math.max(0,Math.floor((d.endTime-Date.now())/1000));const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60),s=rem%60;const lastSeenAgo=Math.max(0,Date.now()-d.lastSeen);const lm=Math.floor(lastSeenAgo/60000);const ls=Math.floor((lastSeenAgo%60000)/1000);let text='🟢 <b>'+d.username+'</b> aktif<br>';if(d.type==='bonds'){text+='📈 Gained: '+d.gained+' / '+d.targetBonds+' bonds<br>'}else{text+='⏳ Time left: '+h+'h '+m+'m '+s+'s<br>'}text+='👁️ Last seen: '+lm+'m '+ls+'s ago<br>';text+='🎮 Activity: '+d.activity;out.innerHTML=text}else if(d.status==='completed'){let text='✅ <b>'+d.username+'</b> selesai<br>';text+='🧾 Order: '+d.no_order+'<br>';if(d.gained!==undefined)text+='📈 Gained: '+d.gained+' bonds';out.innerHTML=text;clearInterval(interval)}}catch{out.innerHTML='❌ Error fetching status';clearInterval(interval)}}</script></body></html>`);
+app.get("/status", (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Check Joki Status</title>
+  <style>
+    body {
+      margin:0; padding:0; background:#18181b; color:#eee;
+      font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center;
+      min-height:100vh;
+    }
+    .main-container {
+      width:90%; max-width:500px; padding:20px;
+      background:#23232b; border-radius:12px; box-shadow:0 2px 16px #0008;
+      text-align:center;
+    }
+    input#u, button {
+      width:100%; padding:12px; margin-top:12px;
+      border:none; border-radius:4px; font-size:16px;
+    }
+    input#u { background:#2a2a33; color:#eee; }
+    button {
+      background:#3b82f6; color:#fff; cursor:pointer;
+    }
+    .status-frame {
+      margin-top:20px; padding:16px;
+      background:#2c2c34; border-radius:8px; box-shadow:0 2px 10px #000;
+      text-align:center;
+    }
+    .qr-frame {
+      margin-top:12px; padding:16px;
+      background:#1f1f25; border-radius:8px;
+      text-align:left; font-size:14px;
+    }
+    h3 { margin-bottom:8px; color:#3b82f6; }
+    @media(min-width:768px) {
+      .main-container { max-width:80%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <h2>🔍 Cek Status Joki</h2>
+    <input id="u" placeholder="Username atau Order ID"/>
+    <button onclick="startCheck()">Check</button>
+
+    <div id="r" class="status-frame"></div>
+
+    <div class="qr-frame">
+      <h3>Mau Diskon Untuk Pembelian Selanjutnya?</h3>
+      <p>Minta kode QRIS ke owner via WhatsApp untuk dapat harga lebih murah.</p>
+      <h3>Apakah Tidak Bisa Mendapatkan Diskon Di Itemku?</h3>
+      <p>Karena ada pajak 12% dari Itemku, saya hanya bisa berikan harga segitu. Ini QRIS saya sebelum pindah ke Itemku.</p>
+      <h3>Dulu Berjualan Dimana?</h3>
+      <p>🤫</p>
+    </div>
+  </div>
+
+  <script>
+    let interval;
+    function startCheck() {
+      clearInterval(interval);
+      const q = document.getElementById('u').value.trim();
+      if (!q) return;
+      check(q);
+      interval = setInterval(() => check(q), 1000);
+    }
+
+    async function check(q) {
+      const out = document.getElementById('r');
+      try {
+        const res = await fetch('/status/' + encodeURIComponent(q), {
+          headers: { "Accept": "application/json" }
+        });
+        const d = await res.json();
+
+        if (!res.ok) {
+          out.innerHTML = '❌ ' + d.error;
+          clearInterval(interval);
+          return;
+        }
+
+        if (d.status === 'pending') {
+          out.innerHTML = '⌛ <b>' + d.username + '</b> sedang menunggu...';
+        } else if (d.status === 'running' || d.status === 'inactive') {
+          const rem = Math.max(0, Math.floor((d.endTime - Date.now()) / 1000));
+          const h = Math.floor(rem / 3600), m = Math.floor((rem % 3600) / 60), s = rem % 60;
+          const lastSeenAgo = Math.max(0, Date.now() - d.lastSeen);
+          const lm = Math.floor(lastSeenAgo / 60000);
+          const ls = Math.floor((lastSeenAgo % 60000) / 1000);
+
+          let text = (d.status === 'inactive' ? '🔴 ' : '🟢 ') + '<b>' + d.username + '</b> aktif<br>';
+          if (d.type === 'bonds') {
+            text += '📈 Gained: ' + d.gained + ' / ' + d.targetBonds + ' bonds<br>';
+          } else {
+            text += '⏳ Time left: ' + h + 'h ' + m + 'm ' + s + 's<br>';
+          }
+          text += '👁️ Last seen: ' + lm + 'm ' + ls + 's ago<br>';
+          text += '🎮 Activity: ' + d.activity;
+          out.innerHTML = text;
+        } else if (d.status === 'completed') {
+          let text = '✅ <b>' + d.username + '</b> selesai<br>';
+          text += '🧾 Order: ' + d.no_order + '<br>';
+          if (d.gained !== undefined) text += '📈 Gained: ' + d.gained + ' bonds';
+          out.innerHTML = text;
+          clearInterval(interval);
+        }
+      } catch {
+        out.innerHTML = '❌ Error fetching status';
+        clearInterval(interval);
+      }
+    }
+  </script>
+</body>
+</html>`);
 });
 
 // GET /order
